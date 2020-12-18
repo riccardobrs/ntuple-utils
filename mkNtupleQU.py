@@ -110,10 +110,14 @@ if __name__ == '__main__':
     suffix = cfg.get('histogram', 'suffix').strip()
     histoTitle = cfg.get('histogram', 'title').strip()
     # get rwgt lists
+    if 'notused' in dict(cfg.items('reweights')).keys():
+        notused = cfg.get ('reweights', 'notused').split(',')
+    else:
+        notused = []
     rwgt_keys, rwgt_used, rwgt_notused, rwgt_dict = rwgtObjects (
         cfg.get ('reweights', 'coupling').split(','),
         cfg.get ('reweights', 'name').split(','),
-        cfg.get ('reweights', 'notused').split(',')
+        notused
     )
     
     for ntupleFileIn in files:
