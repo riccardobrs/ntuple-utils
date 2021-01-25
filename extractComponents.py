@@ -3,19 +3,9 @@ import argparse
 import configparser
 from array import array
 import sys
-
-
-def getTreeName (filepath, conventions):
-
-    if '/' in filepath:
-        treeName = filepath.split('/')[1]
-    else:
-        treeName = filepath
-        
-    for s in conventions:
-        treeName = treeName.replace(s.strip(), '')
-
-    return treeName
+import glob
+import os
+from common.ntupleCommon import getTreeName, writeNtuple
 
 
 def rwgtObjects (couplingList, nameList, notusedList):
@@ -82,14 +72,6 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt):
     return outevents_li, outevents_qu, sum_nominal_weight, sum_rwgt_li, sum_rwgt_qu
 
 
-def writeNtuple (name, title, variables, events):
-
-    print ('[INFO] writing ntuple')
-
-    ntuple = ROOT.TNtuple (name, title, ':'.join(variables))
-    for e in events : ntuple.Fill(e)
-    ntuple.Write()
-
 def writeHisto (name, title, old_XS, old_sum_wgt, new_sum_wgt):
 
     print ('[INFO] writing global numbers histogram')
@@ -121,7 +103,9 @@ if __name__ == '__main__':
     cfg.readfp(open(args.config, 'r'))
 
     # retrieve infos from config
-    files = cfg.get('ntuple', 'files').split(',')
+    ntupleDir = cfg.get('ntuple', 'dir')
+    operators = cfg.get('operator', 'name').split(',')
+    stateOut = cfg.get('tobemerged', 'out').strip()
     staticParts = cfg.get('ntuple', 'static').split(',')
     w = cfg.get('variables', 'nominalwgt').strip()
     ntupleSuffix = cfg.get('ntuple', 'suffix').strip()
@@ -137,11 +121,15 @@ if __name__ == '__main__':
         cfg.get ('reweights', 'name').split(','),
         notused
     )
+
+    files = [f for f in glob.glob(ntupleDir + '/ntuple*' + ntupleSuffix + '.root') if stateOut in f]
     
     for ntupleFileIn in files:
 
+        if not any(op.strip() in os.path.basename(ntupleFileIn).split('_') for op in operators): continue
+
         ntupleFileIn = ntupleFileIn.strip()
-        ntupleNameIn = getTreeName (ntupleFileIn, staticParts)
+        ntupleNameIn = getTreeName (os.path.basename(ntupleFileIn), staticParts)
         histoNameIn = ntupleNameIn + histoSuffix
 
         print ('\n\tNtuple file-in   =  ' + ntupleFileIn)
@@ -176,7 +164,7 @@ if __name__ == '__main__':
                     SumWgtExtr = SumWgtQU
                 else: continue
 
-            ntupleFileOut = ntupleFileIn.replace('.root', '_{0}.root'.format(component))
+            ntupleFileOut = ntupleFileIn.replace(ntupleSuffix, '_' + component).strip()
             ntupleNameOut = ntupleNameIn.replace(ntupleSuffix, '_' + component).strip()
             histoNameOut = ntupleNameOut + histoSuffix
 
@@ -189,4 +177,4 @@ if __name__ == '__main__':
             writeHisto (histoNameOut, histoTitle, overallXS, SumWgtOld, SumWgtExtr)
             f_out.Close()
 
-    print ('[INFO] end process')
+    print ('\n[INFO] end process')
