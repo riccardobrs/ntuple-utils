@@ -5,7 +5,9 @@ from array import array
 import sys
 import glob
 import os
-from common.ntupleCommon import getTreeName, writeNtuple
+import logging
+from datetime import datetime
+from common.ntupleCommon import getTreeName, getNtuple, getHisto
 
 
 def rwgtObjects (couplingList, nameList, notusedList):
@@ -31,6 +33,9 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt):
     sum_rwgt_li = 0.
     sum_rwgt_qu = 0.
 
+    quad_null = 0
+    quad_neg = 0
+
     leaves = {k: ntuple.GetLeaf(k) for k in variables}
     w = ntuple.GetLeaf(nominal_wgt)
     rwgt0 = ntuple.GetLeaf(rwgt['0.0'])
@@ -54,6 +59,8 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt):
         w_qu = 0.5 * (a + b - 2 * c)
         sum_rwgt_li += w_li
         sum_rwgt_qu += w_qu
+        if w_qu == 0 : quad_null = 1 + quad_null
+        if w_qu < 0 : quad_neg = 1 + quad_neg
 
         for (key, val) in sorted(leaves.items(), key=lambda x: x[1]):
             if key == nominal_wgt:
@@ -65,22 +72,15 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt):
         outevents_li.append (array('f', values_li))
         outevents_qu.append (array('f', values_qu))
 
+    logging.info('sum of SM + LI + QU nominal weights: ' + str(sum_nominal_weight))
+    logging.info('sum of new LI nominal weights: ' + str(sum_rwgt_li))
+    logging.info('sum of new QU nominal weights: ' + str(sum_rwgt_qu))
+
     print ('[INFO] sum of SM + LI + QU nominal weights: ' + str(sum_nominal_weight))
     print ('[INFO] sum of new LI nominal weights: ' + str(sum_rwgt_li))
     print ('[INFO] sum of new QU nominal weights: ' + str(sum_rwgt_qu))
 
-    return outevents_li, outevents_qu, sum_nominal_weight, sum_rwgt_li, sum_rwgt_qu
-
-
-def writeHisto (name, title, old_XS, old_sum_wgt, new_sum_wgt):
-
-    print ('[INFO] writing global numbers histogram')
-
-    histo = ROOT.TH1F (name, title, 3, 0, 3)
-    histo.SetBinContent(1, old_XS * new_sum_wgt / old_sum_wgt)
-    histo.SetBinContent(2, new_sum_wgt)
-    histo.SetBinContent(3, new_sum_wgt) # to be improved
-    histo.Write()
+    return outevents_li, outevents_qu, sum_nominal_weight, sum_rwgt_li, sum_rwgt_qu, quad_null, quad_neg
 
 
 if __name__ == '__main__':
@@ -104,6 +104,7 @@ if __name__ == '__main__':
 
     # retrieve infos from config
     ntupleDir = cfg.get('ntuple', 'dir')
+    ntupleDir = ntupleDir + '/' + cfg.get('subdir', 'proc')
     operators = cfg.get('operator', 'name').split(',')
     stateOut = cfg.get('tobemerged', 'out').strip()
     staticParts = cfg.get('ntuple', 'static').split(',')
@@ -111,6 +112,9 @@ if __name__ == '__main__':
     ntupleSuffix = cfg.get('ntuple', 'suffix').strip()
     histoSuffix = cfg.get('histogram', 'suffix').strip()
     histoTitle = cfg.get('histogram', 'title').strip()
+    logfile = ntupleDir + '/' + datetime.now().strftime('%Y%m%d-%H%M%S-extractComponents.log')
+    logging.basicConfig(format='%(asctime)s :: %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S',
+                            filename=logfile, level=logging.INFO)
     # get rwgt lists
     if 'notused' in dict(cfg.items('reweights')).keys():
         notused = cfg.get ('reweights', 'notused').split(',')
@@ -132,6 +136,7 @@ if __name__ == '__main__':
         ntupleNameIn = getTreeName (os.path.basename(ntupleFileIn), staticParts)
         histoNameIn = ntupleNameIn + histoSuffix
 
+        logging.info('working on ' + ntupleNameIn.replace(ntupleSuffix, ''))
         print ('\n\tNtuple file-in   =  ' + ntupleFileIn)
         print ('\tTNtuple name-in  =  ' + ntupleNameIn)
         print ('\tTH1F name-in     =  ' + histoNameIn + '\n')
@@ -140,6 +145,7 @@ if __name__ == '__main__':
         t = ROOT.gDirectory.Get (ntupleNameIn)
         h = ROOT.gDirectory.Get (histoNameIn)
         overallXS = h.GetBinContent(1)
+        logging.info('overall XS: ' + str(overallXS))
         print ('[INFO] overall XS: ' + str(overallXS))
             
         leaves = t.GetListOfLeaves()
@@ -148,8 +154,15 @@ if __name__ == '__main__':
         vars = [v for v in vars_wrwgt if v not in list(set(rwgt_used)|set(rwgt_notused))]
         vars.sort()
 
-        eventsLI, eventsQU, SumWgtOld, SumWgtLI, SumWgtQU = getEvents (t, vars, w, rwgt_dict)
+        eventsLI, eventsQU, SumWgtOld, SumWgtLI, SumWgtQU, q_null, q_neg = getEvents (t, vars, w, rwgt_dict)
         f_in.Close()
+
+        if q_null > 0:
+            logging.warning(str(q_null) + 'events give BSM nominal weight = 0')
+            print ('[WARNING] {0}: {1} events give BSM nominal weight = 0'.format(ntupleNameIn, q_null))
+        if q_neg > 0:
+            logging.warning(str(q_neg) + 'events give BSM nominal weight < 0')
+            print ('[WARNING] {0}: {1} events give BSM nominal weight < 0'.format(ntupleNameIn, q_neg))
 
         for component in ['LI', 'QU']:
 
@@ -163,6 +176,9 @@ if __name__ == '__main__':
                     eventsExtr = eventsQU
                     SumWgtExtr = SumWgtQU
                 else: continue
+            
+            XS = overallXS * SumWgtExtr / SumWgtOld
+            logging.info('XSec({0}) =  {1}'.format(component, XS))
 
             ntupleFileOut = ntupleFileIn.replace(ntupleSuffix, '_' + component).strip()
             ntupleNameOut = ntupleNameIn.replace(ntupleSuffix, '_' + component).strip()
@@ -172,9 +188,15 @@ if __name__ == '__main__':
             print ('\tTNtuple name-out =  ' + ntupleNameOut)
             print ('\tTH1F name-out    =  ' + histoNameOut + '\n')
             
+            t = getNtuple (ntupleNameOut, ntupleNameOut, vars, eventsExtr)
+            h = getHisto (histoNameOut, histoTitle, XS, SumWgtExtr, SumWgtExtr)
+
             f_out = ROOT.TFile (ntupleFileOut, 'RECREATE')
-            writeNtuple (ntupleNameOut, ntupleNameOut, vars, eventsExtr)
-            writeHisto (histoNameOut, histoTitle, overallXS, SumWgtOld, SumWgtExtr)
+
+            print ('[INFO] writing ROOT file')
+            t.Write()
+            h.Write()
+            
             f_out.Close()
 
     print ('\n[INFO] end process')
