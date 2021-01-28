@@ -25,13 +25,6 @@ def rwgtObjects (couplingList, nameList, notusedList):
     else: raise IndexError ('In config file <name> and <coupling> have different sizes')
 
 
-def mkCanva (p0, p1, p2, xmin, xmax, gr, func):
-
-    
-
-    return canva
-
-
 def getEvents (ntuple, variables, nominal_wgt, rwgt, fit, imagesN, imagesDir):
 
     outevents_li = []
