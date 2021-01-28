@@ -6,6 +6,7 @@ import sys
 import glob
 import os
 import logging
+import pandas as pd
 from datetime import datetime
 from common.ntupleCommon import getTreeName, getNtuple, getHisto
 
@@ -24,7 +25,14 @@ def rwgtObjects (couplingList, nameList, notusedList):
     else: raise IndexError ('In config file <name> and <coupling> have different sizes')
 
 
-def getEvents (ntuple, variables, nominal_wgt, rwgt):
+def mkCanva (p0, p1, p2, xmin, xmax, gr, func):
+
+    
+
+    return canva
+
+
+def getEvents (ntuple, variables, nominal_wgt, rwgt, fit, imagesN, imagesDir):
 
     outevents_li = []
     outevents_qu = []
@@ -41,6 +49,20 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt):
     rwgt0 = ntuple.GetLeaf(rwgt['0.0'])
     rwgtp1 = ntuple.GetLeaf(rwgt['1.0'])
     rwgtm1 = ntuple.GetLeaf(rwgt['-1.0'])
+    xvec = [1.0, -1.0, 0.0]
+    if fit:
+        ROOT.gStyle.SetOptFit(1112)
+        fit_results = []
+        neg_bsm_results = []
+        try:
+            rwgtp2 = ntuple.GetLeaf(rwgt['2.0'])
+            rwgtm2 = ntuple.GetLeaf(rwgt['-2.0'])
+            xvec.append (2.0)
+            xvec.append (-2.0)
+            p5 = True
+        except:
+            print ('[WARNING] rwgt(2) and rwgt(-2) are not defined')
+            p5 = False
 
     print ('[INFO] reading SM + LI + QU ntuple')
     
@@ -55,12 +77,69 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt):
         a = rwgtp1.GetValue ()
         b = rwgtm1.GetValue ()
         c = rwgt0.GetValue ()
-        w_li = 0.5 * (a - b)
-        w_qu = 0.5 * (a + b - 2 * c)
+
+        if fit:
+
+            yvec = []
+            yvec.append (a / w.GetValue())
+            yvec.append (b / w.GetValue())
+            yvec.append (c / w.GetValue())
+            if p5:
+                yvec.append (rwgtp2.GetValue() / w.GetValue())
+                yvec.append (rwgtm2.GetValue() / w.GetValue())
+            analit_qu = 0.5 * (a + b - 2 * c) / w.GetValue()
+            analit_li = 0.5 * (a - b) / w.GetValue()
+            analit_sm = c / w.GetValue()
+            graph = ROOT.TGraph (len(xvec), array('d', xvec), array('d', yvec))
+            graph.SetTitle('')
+            graph.SetMarkerStyle(20)
+            graph.GetXaxis().SetTitle('coupling')
+            graph.GetYaxis().SetTitle('rwgt / nominal wgt')
+            fit_f = ROOT.TF1 ('fit_f', '[0]*x*x + [1]*x + [2]', min(xvec), max(xvec))
+            fit_f.SetParName (0, 'QU')
+            fit_f.SetParName (1, 'LI')
+            fit_f.SetParName (2, 'SM')
+            fit_f.SetParameter(0, analit_qu)
+            fit_f.SetParameter(1, analit_li)
+            fit_f.SetParameter(2, analit_sm)
+            if i < imagesN :
+                parab = ROOT.TF1 ('parab', '{0}*x*x + {1}*x + {2}'.format(
+                    analit_qu, analit_li, analit_sm), min(xvec), max(xvec))
+                parab.SetLineColor(ROOT.kBlue)
+                fit_f.SetLineColor(ROOT.kRed)
+                canva = ROOT.TCanvas()
+                canva.cd()
+                graph.Draw('AP')
+                parab.Draw('SAME')
+                leg = ROOT.TLegend()
+                leg.AddEntry(fit_f, 'Fit', 'L')
+                leg.AddEntry(parab, 'Analytical', 'L')
+                leg.Draw()
+            graph.Fit('fit_f')
+            w_li = fit_f.GetParameter(1) * w.GetValue ()
+            w_qu = fit_f.GetParameter(0) * w.GetValue ()
+            fit_res = [fit_f.GetParameter(0), fit_f.GetParError(0), fit_f.GetParameter(1),
+                        fit_f.GetParError(1), fit_f.GetChisquare(), fit_f.GetNDF(), fit_f.GetProb()]
+            fit_results.append(array('d', fit_res))
+            if w_qu < 0:
+                if fit_f.GetParameter(0) + fit_f.GetParError(0) < 0:
+                    neg_bsm_res = [fit_f.GetParameter(0), fit_f.GetParError(0)]
+                    neg_bsm_results.append(array('d', neg_bsm_res))
+            if i < imagesN :
+                canva.SaveAs('{0}/event_{1}.png'.format(imagesDir, i))
+                canva.SaveAs('{0}/event_{1}.root'.format(imagesDir, i))
+            
+        else:
+
+            w_li = 0.5 * (a - b)
+            w_qu = 0.5 * (a + b - 2 * c)
+
         sum_rwgt_li += w_li
         sum_rwgt_qu += w_qu
         if w_qu == 0 : quad_null = 1 + quad_null
-        if w_qu < 0 : quad_neg = 1 + quad_neg
+        if w_qu < 0:
+            w_qu = 0
+            quad_neg = 1 + quad_neg
 
         for (key, val) in sorted(leaves.items(), key=lambda x: x[1]):
             if key == nominal_wgt:
@@ -71,6 +150,19 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt):
                 values_qu.append(float(val.GetValue ()))
         outevents_li.append (array('f', values_li))
         outevents_qu.append (array('f', values_qu))
+    
+    if fit:
+        df = pd.DataFrame(fit_results)
+        if not df.empty:
+            fit_columns = ['QU', 'QUerr', 'LI', 'LIerr', 'chi2', 'NDF', 'prob']
+            df.columns = fit_columns
+        df_neg = pd.DataFrame(neg_bsm_results)
+        if not df_neg.empty:
+            neg_columns = ['QU', 'QUerr']
+            df_neg.columns = neg_columns
+    else:
+        df = pd.DataFrame()
+        df_neg = pd.DataFrame()
 
     logging.info('sum of SM + LI + QU nominal weights: ' + str(sum_nominal_weight))
     logging.info('sum of new LI nominal weights: ' + str(sum_rwgt_li))
@@ -80,7 +172,26 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt):
     print ('[INFO] sum of new LI nominal weights: ' + str(sum_rwgt_li))
     print ('[INFO] sum of new QU nominal weights: ' + str(sum_rwgt_qu))
 
-    return outevents_li, outevents_qu, sum_nominal_weight, sum_rwgt_li, sum_rwgt_qu, quad_null, quad_neg
+    resultsDict = {
+        'events_li': outevents_li,
+        'events_qu': outevents_qu,
+        'sum_nominal_weight': sum_nominal_weight,
+        'sum_rwgt_li': sum_rwgt_li,
+        'sum_rwgt_qu': sum_rwgt_qu,
+        'quad_null': quad_null,
+        'quad_neg': quad_neg,
+        'fit_df': df,
+        'neg_df': df_neg
+    }
+
+    return resultsDict
+
+def remember (x):
+
+    global found_op
+    found_op = x
+
+    return True
 
 
 if __name__ == '__main__':
@@ -94,6 +205,8 @@ if __name__ == '__main__':
     parser.add_argument('--cfg', dest='config', help='Config .cfg file path containing reweights', required=True)
     parser.add_argument('--li', dest='li', help='Extract linear component', type=bool, default=True, required=False)
     parser.add_argument('--qu', dest='qu', help='Extract quadratic component', type=bool, default=True, required=False)
+    parser.add_argument('--fit', dest='fit', help='Using a parabolic fit', default=False, action='store_true', required=False)
+    parser.add_argument('--png', dest='png', help='How many fit to be saved', type=int, default=0, required=False)
     args = parser.parse_args()
 
     if not args.li and not args.qu:
@@ -130,7 +243,11 @@ if __name__ == '__main__':
     
     for ntupleFileIn in files:
 
-        if not any(op.strip() in os.path.basename(ntupleFileIn).split('_') for op in operators): continue
+        if not any(op.strip() in os.path.basename(ntupleFileIn).split('_') and
+            remember (op.strip()) for op in operators) : continue
+        
+        imagesDir = ntupleDir + '/' + found_op
+        if args.png > 0 and not os.path.isdir (imagesDir) : os.mkdir (imagesDir)
 
         ntupleFileIn = ntupleFileIn.strip()
         ntupleNameIn = getTreeName (os.path.basename(ntupleFileIn), staticParts)
@@ -154,15 +271,35 @@ if __name__ == '__main__':
         vars = [v for v in vars_wrwgt if v not in list(set(rwgt_used)|set(rwgt_notused))]
         vars.sort()
 
-        eventsLI, eventsQU, SumWgtOld, SumWgtLI, SumWgtQU, q_null, q_neg = getEvents (t, vars, w, rwgt_dict)
+        events_dictionary = getEvents (t, vars, w, rwgt_dict, args.fit, args.png, imagesDir)
+
+        eventsLI = events_dictionary['events_li']
+        eventsQU = events_dictionary['events_qu']
+        SumWgtOld = events_dictionary['sum_nominal_weight']
+        SumWgtLI = events_dictionary['sum_rwgt_li']
+        SumWgtQU = events_dictionary['sum_rwgt_qu']
+        q_null = events_dictionary['quad_null']
+        q_neg = events_dictionary['quad_neg']
+        fit_dataframe = events_dictionary['fit_df']
+        negBsm_dataframe = events_dictionary['neg_df']
+
         f_in.Close()
 
         if q_null > 0:
-            logging.warning(str(q_null) + 'events give BSM nominal weight = 0')
+            logging.warning(str(q_null) + ' events give BSM nominal weight = 0')
             print ('[WARNING] {0}: {1} events give BSM nominal weight = 0'.format(ntupleNameIn, q_null))
         if q_neg > 0:
-            logging.warning(str(q_neg) + 'events give BSM nominal weight < 0')
-            print ('[WARNING] {0}: {1} events give BSM nominal weight < 0'.format(ntupleNameIn, q_neg))
+            logging.warning(str(q_neg) + ' events give BSM nominal weight < 0. Setting them to 0')
+            print ('[WARNING] {0}: {1} events give BSM nominal weight < 0. Setting them to 0'.format(ntupleNameIn, q_neg))
+
+        if not fit_dataframe.empty:
+            csvfitFile = ntupleFileIn.replace(ntupleSuffix, '').replace('.root', '.csv').replace('ntuple_', '').strip()
+            print ('[INFO] writing fit results to ' + os.path.basename(csvfitFile))
+            fit_dataframe.to_csv(csvfitFile, index=False)
+            if not negBsm_dataframe.empty:
+                csvNegBSM = csvfitFile.replace('.csv', '_QU_neg.csv')
+                print ('[WARNING] writing negative BSM fit results to ' + os.path.basename(csvNegBSM))
+                negBsm_dataframe.to_csv(csvNegBSM, index=False)
 
         for component in ['LI', 'QU']:
 

@@ -33,3 +33,11 @@ A config file has to be provided when running the script:
 Linear/quadratic component extraction can be disabled through _li/qu_ options:
 
     python extractComponents.py --cfg=configs/ntuple_config.cfg --li=False
+
+To enable the LI/QU parameters estimation by means of a parabolic fit: --fit 
+ 
+More than 3 reweight points are reccomended for the parabolic fit. If fit option is on, a certain number of plots (for each operator) can be saved:
+
+    python extractComponents.py --cfg configs/ntuple_config.cfg --fit --png 100
+
+These plots shows reweights and fit / analyical comparison. Be careful since the execution becomes slower.
