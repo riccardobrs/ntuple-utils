@@ -6,11 +6,11 @@ It merges _*.root_ files where a TNtuple object and a global numbers histogram (
  
 A config file has to be provided when running the script:
 
-    python sumNtuple.py --cfg=configs/ntuple_config.cfg
+    python sumNtuple.py --cfg configs/ntuple_config.cfg
 
 Output are stored as _*.root_ files by default. If needed, the output can be _.csv_ files (with related _.cfg_ files automatically produced).
  
-    python sumNtuple.py --cfg=configs/ntuple_config.cfg --csv
+    python sumNtuple.py --cfg configs/ntuple_config.cfg --csv
 
 To process _.csv_ files, the _text2root.py_ script is provided.
 
@@ -28,16 +28,22 @@ It process _*.root_ files where a TNtuple object and a global numbers histogram 
 
 A config file has to be provided when running the script:
 
-    python extractComponents.py --cfg=configs/ntuple_config.cfg
+    python extractComponents.py --cfg configs/ntuple_config_1D.cfg
 
 Linear/quadratic component extraction can be disabled through _li/qu_ options:
 
-    python extractComponents.py --cfg=configs/ntuple_config.cfg --li=False
+    python extractComponents.py --cfg=configs/ntuple_config_1D.cfg --li=False
 
 To enable the LI/QU parameters estimation by means of a parabolic fit: --fit 
  
 More than 3 reweight points are reccomended for the parabolic fit. If fit option is on, a certain number of plots (for each operator) can be saved:
 
-    python extractComponents.py --cfg configs/ntuple_config.cfg --fit --png 100
+    python extractComponents.py --cfg configs/ntuple_config_1D.cfg --fit --png 100
 
 These plots shows reweights and fit / analyical comparison. Be careful since the execution becomes slower.
+
+## extractInterference.py
+
+Quite similar to _extractComponents.py_: from _*\_SM\_LI\_QU\_IN.root_ to _*\_IN.root_
+
+    python extractComponents.py --cfg configs/ntuple_config_2D.cfg
