@@ -202,7 +202,7 @@ def makeNtupleProdCfg (basefolder,outfolder, LHEfiles, XS):
     jjs = ['V', 'V2', 'noV', 'mjjmax', 'mjjnomax']
     varList = [jetsVar + '_' + jj for jetsVar in jetsVars for jj in jjs]
     varList = [v.replace('mjj_mjj', 'mjj_') for v in varList]
-    varList = varList + ['mll', 'ptl1', 'ptl2', 'etal1', 'etal2', 'ptll']
+    varList = varList + jetsVars + ['mll', 'ptl1', 'ptl2', 'etal1', 'etal2', 'ptll']
     rwgtList = ['rwgt_1', 'rwgt_2', 'rwgt_3', 'rwgt_4', 'rwgt_5']
 
     processName = basefolder.split ('/')[-1]
