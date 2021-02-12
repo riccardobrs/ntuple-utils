@@ -30,3 +30,17 @@ def getHisto (name, title, XS, sum_wgt_overall, sum_wgt_passed):
     histo.SetBinContent(3, sum_wgt_passed)
     
     return histo
+    
+
+def rwgtObjects (couplingList, nameList, notusedList):
+
+    keys = [rwgt.strip() for rwgt in couplingList]
+    used = [rwgt.strip() for rwgt in nameList]
+    notused = [rwgt.strip() for rwgt in notusedList]
+
+    if len(keys) == len(used):
+
+        used_dict = dict(zip(keys, used))
+        return keys, used, notused, used_dict
+
+    else: raise IndexError ('In config file <name2d> and <coupling2d> have different sizes')

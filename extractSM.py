@@ -8,15 +8,31 @@ import os
 import logging
 import pandas as pd
 from datetime import datetime
-from common.ntupleCommon import *
+from common.ntupleCommon import getTreeName, getNtuple, getHisto
+
+
+def rwgtObjects (couplingList, nameList, notusedList):
+
+    keys = [rwgt.strip() for rwgt in couplingList]
+    used = [rwgt.strip() for rwgt in nameList]
+    notused = [rwgt.strip() for rwgt in notusedList]
+
+    if len(keys) == len(used):
+
+        used_dict = dict(zip(keys, used))
+        return keys, used, notused, used_dict
+
+    else: raise IndexError ('In config file <name> and <coupling> have different sizes')
 
 
 def getEvents (ntuple, variables, nominal_wgt, rwgt, fit, imagesN, imagesDir):
 
+    outevents_sm = []
     outevents_li = []
     outevents_qu = []
 
     sum_nominal_weight = 0.
+    sum_rwgt_sm = 0.
     sum_rwgt_li = 0.
     sum_rwgt_qu = 0.
 
@@ -47,6 +63,7 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt, fit, imagesN, imagesDir):
     
     for i in range(0, ntuple.GetEntries()):
 
+        values_sm = []
         values_li = []
         values_qu = []
 
@@ -95,6 +112,7 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt, fit, imagesN, imagesDir):
                 leg.AddEntry(parab, 'Analytical', 'L')
                 leg.Draw()
             graph.Fit('fit_f')
+            w_sm = fit_f.GetParameter(2) * w.GetValue ()
             w_li = fit_f.GetParameter(1) * w.GetValue ()
             w_qu = fit_f.GetParameter(0) * w.GetValue ()
             fit_res = [fit_f.GetParameter(0), fit_f.GetParError(0), fit_f.GetParameter(1),
@@ -109,10 +127,12 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt, fit, imagesN, imagesDir):
                 canva.SaveAs('{0}/event_{1}.root'.format(imagesDir, i))
             
         else:
-
+            
+            w_sm = c
             w_li = 0.5 * (a - b)
             w_qu = 0.5 * (a + b - 2 * c)
 
+        sum_rwgt_sm += w_sm
         sum_rwgt_li += w_li
         sum_rwgt_qu += w_qu
         if w_qu == 0 : quad_null = 1 + quad_null
@@ -122,11 +142,15 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt, fit, imagesN, imagesDir):
 
         for (key, val) in sorted(leaves.items(), key=lambda x: x[1]):
             if key == nominal_wgt:
+                values_sm.append(w_sm)
                 values_li.append(w_li)
                 values_qu.append(w_qu)
             else:
+                values_sm.append(float(val.GetValue ()))
                 values_li.append(float(val.GetValue ()))
                 values_qu.append(float(val.GetValue ()))
+
+        outevents_sm.append (array('f', values_sm))     
         outevents_li.append (array('f', values_li))
         outevents_qu.append (array('f', values_qu))
     
@@ -152,9 +176,11 @@ def getEvents (ntuple, variables, nominal_wgt, rwgt, fit, imagesN, imagesDir):
     print ('[INFO] sum of new QU nominal weights: ' + str(sum_rwgt_qu))
 
     resultsDict = {
+        'events_sm': outevents_sm,
         'events_li': outevents_li,
         'events_qu': outevents_qu,
         'sum_nominal_weight': sum_nominal_weight,
+        'sum_rwgt_sm': sum_rwgt_sm,
         'sum_rwgt_li': sum_rwgt_li,
         'sum_rwgt_qu': sum_rwgt_qu,
         'quad_null': quad_null,
@@ -182,6 +208,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Command line parser')
     parser.add_argument('--cfg', dest='config', help='Config .cfg file path containing reweights', required=True)
+    parser.add_argument('--sm', dest='sm', help='Extract SM component', type=bool, default=False, required=False)
     parser.add_argument('--li', dest='li', help='Extract linear component', type=bool, default=True, required=False)
     parser.add_argument('--qu', dest='qu', help='Extract quadratic component', type=bool, default=True, required=False)
     parser.add_argument('--fit', dest='fit', help='Using a parabolic fit', default=False, action='store_true', required=False)
@@ -252,9 +279,11 @@ if __name__ == '__main__':
 
         events_dictionary = getEvents (t, vars, w, rwgt_dict, args.fit, args.png, imagesDir)
 
+        eventsSM = events_dictionary['events_sm']
         eventsLI = events_dictionary['events_li']
         eventsQU = events_dictionary['events_qu']
         SumWgtOld = events_dictionary['sum_nominal_weight']
+        SumWgtSM = events_dictionary['sum_rwgt_sm']
         SumWgtLI = events_dictionary['sum_rwgt_li']
         SumWgtQU = events_dictionary['sum_rwgt_qu']
         q_null = events_dictionary['quad_null']
@@ -280,9 +309,14 @@ if __name__ == '__main__':
                 print ('[WARNING] writing negative BSM fit results to ' + os.path.basename(csvNegBSM))
                 negBsm_dataframe.to_csv(csvNegBSM, index=False)
 
-        for component in ['LI', 'QU']:
+        for component in ['SM', 'LI', 'QU']:
 
-            if component == 'LI':
+            if component == 'SM':
+                if args.sm:
+                    eventsExtr = eventsSM
+                    SumWgtExtr = SumWgtSM
+                else: continue
+            elif component == 'LI':
                 if args.li:
                     eventsExtr = eventsLI
                     SumWgtExtr = SumWgtLI
@@ -296,9 +330,14 @@ if __name__ == '__main__':
             XS = overallXS * SumWgtExtr / SumWgtOld
             logging.info('XSec({0}) =  {1}'.format(component, XS))
 
-            ntupleFileOut = ntupleFileIn.replace(ntupleSuffix, '_' + component).strip()
-            ntupleNameOut = ntupleNameIn.replace(ntupleSuffix, '_' + component).strip()
-            histoNameOut = ntupleNameOut + histoSuffix
+            if component == 'SM':
+                ntupleFileOut = 'ntuple_ZV_SM.root'
+                ntupleNameOut = 'ZV_SM'
+                histoNameOut =  'ZV_SM_nums'
+            else:
+                ntupleFileOut = ntupleFileIn.replace(ntupleSuffix, '_' + component).strip()
+                ntupleNameOut = ntupleNameIn.replace(ntupleSuffix, '_' + component).strip()
+                histoNameOut = ntupleNameOut + histoSuffix
 
             print ('\n\tNtuple file-out  =  ' + ntupleFileOut)
             print ('\tTNtuple name-out =  ' + ntupleNameOut)
