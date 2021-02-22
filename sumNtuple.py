@@ -98,8 +98,15 @@ if __name__ == '__main__':
         if len(files) > len(statesIn):
             print ('\n[WARNING] skipping operator {0} because of ambiguous files names'.format(operator.strip()))
             continue
-
-        print ('\n[INFO] working on operator ' + operator.strip())
+        
+        ntupleFileOut = files[0].strip()
+        for stIn in statesIn: ntupleFileOut = ntupleFileOut.replace(stIn.strip(), stateOut)
+        ntupleFileOut = ntupleDir + '/' + procSubdir + '/' + os.path.basename(ntupleFileOut)
+        if os.path.isfile(ntupleFileOut):
+            print ('[WARNING] found ntuple for operator ' + operator.strip() + '. Skipping it')
+            continue
+        else:
+            print ('\n[INFO] working on operator ' + operator.strip())
 
         eventsList = []
 
@@ -135,14 +142,11 @@ if __name__ == '__main__':
 
             f_in.Close()
 
-        ntupleFileOut = files[0].strip()
-        for stIn in statesIn: ntupleFileOut = ntupleFileOut.replace(stIn.strip(), stateOut)
         if args.csv:
             csvFileOut = ntupleDir + '/' + csvSubdir + '/' + os.path.basename(ntupleFileOut).replace('.root', '.csv')
             cfgFileOut = ntupleDir + '/' + cfgSubdir + '/' + os.path.basename(ntupleFileOut).replace('.root', '.cfg')
             print ('\n[INFO] csv file-out =  ' + csvFileOut)
             print ('[INFO] cfg file-out =  ' + cfgFileOut)
-        ntupleFileOut = ntupleDir + '/' + procSubdir + '/' + os.path.basename(ntupleFileOut)
         ntupleNameOut = getTreeName (os.path.basename(ntupleFileOut), staticParts)
         histoNameOut = ntupleNameOut + histoSuffix
 
