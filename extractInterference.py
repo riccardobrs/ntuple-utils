@@ -145,8 +145,8 @@ if __name__ == '__main__':
         print ('\tTNtuple name-out =  ' + ntupleNameOut)
         print ('\tTH1F name-out    =  ' + histoNameOut + '\n')
             
-        t = getNtuple (ntupleNameOut, ntupleNameOut, vars, eventsExtr)
-        h = getHisto (histoNameOut, histoTitle, XS, SumWgtExtr, SumWgtExtr)
+        t = getNtuple (ntupleNameOut, ntupleNameOut, vars, eventsIN)
+        h = getHisto (histoNameOut, histoTitle, XS, SumWgtIN, SumWgtIN)
 
         f_out = ROOT.TFile (ntupleFileOut, 'RECREATE')
 
