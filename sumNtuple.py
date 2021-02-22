@@ -41,8 +41,11 @@ if __name__ == '__main__':
  --------------- """)
 
     parser = argparse.ArgumentParser(description='Command line parser')
-    parser.add_argument('--cfg', dest='config', help='Config .cfg file path containing ntuple infos', required=True)
+    parser.add_argument('--cfg', dest='config', help='Config .cfg file path containing ntuple infos',
+                            required=True)
     parser.add_argument('--csv', dest='csv', help='Save .cfg output and ntuple in .csv format', 
+                            default=False, action='store_true', required=False)
+    parser.add_argument('--multi', dest='multi', help='Multi operator mode: op1_op2. Default is 1D', 
                             default=False, action='store_true', required=False)
     args = parser.parse_args()
 
@@ -57,7 +60,7 @@ if __name__ == '__main__':
     histoTitle = cfg.get('histogram', 'title').strip()
     statesIn = cfg.get('tobemerged', 'in').split(',')
     stateOut = cfg.get('tobemerged', 'out').strip()
-    operators = cfg.get('operator', 'name').split(',')
+    ops1d = cfg.get('operator', 'name').split(',')
     csvSubdir = cfg.get('subdir', 'csv').strip()
     cfgSubdir = cfg.get('subdir', 'cfg').strip()
     procSubdir = cfg.get('subdir', 'proc').strip()
@@ -68,10 +71,23 @@ if __name__ == '__main__':
         sdirpath = ntupleDir + '/' + sdir
         if not os.path.isdir(sdirpath):
             os.mkdir(sdirpath)
+    
+    if args.multi:
+        operators = list()
+        for x in range(len(ops1d)):
+            for y in range(x+1, len(ops1d)):
+                operators.append('{0}_{1}'.format(ops1d[x].strip(),ops1d[y].strip()))
+    else:
+        operators = ops1d
 
     for operator in operators:
 
         files = [f for f in glob.glob(ntupleDir + '/ntuple*' + ntupleSuffix + '.root') if (operator.strip()+'_') in f]
+        if args.multi:
+            files = [f for f in files if 'IN' in f]
+        else:
+            files = [f for f in files if 'IN' not in f]
+        
         toBeSkipped = 0
         for state in statesIn:
             if not any(state.strip() in os.path.basename(f) for f in files):

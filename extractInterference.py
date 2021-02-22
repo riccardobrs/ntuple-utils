@@ -104,7 +104,7 @@ if __name__ == '__main__':
     
     for ntupleFileIn in files:
 
-        if not any(op.strip() in os.path.basename(ntupleFileIn).split('_')
+        if not any(op.strip() in os.path.basename(ntupleFileIn)
             for op in operators) : continue
 
         ntupleFileIn = ntupleFileIn.strip()
