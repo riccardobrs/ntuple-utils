@@ -6,11 +6,6 @@ import os
 
 if __name__ == '__main__':
 
-    print("""
- ______________ 
-  Check Events 
- -------------- """)
-
     parser = argparse.ArgumentParser(description='Command line parser')
     parser.add_argument('-b', dest='base', help='Base directory where operator folders are contained',
                             required=True)
@@ -25,11 +20,16 @@ if __name__ == '__main__':
     for f in files:
         rf = ROOT.TFile(f, 'READ')
         t = rf.Get('Events')
-        if t.GetEntries() == 0:
+        n = t.GetEntries()
+        if n == 0:
+            print('>>> Empty events tree for ' + f)
             corrupt.append(f)
+        else:
+            print('>>> Number of events for {0} = {1}'.format(f,n))
         rf.Close()
 
-    for c in corrupt:
-        print('>>> Empty events tree for ' + c)
-        if args.delete: os.system('rm ' + c)
+    if args.delete:
+        print('>>> Removing empty root files')
+        for c in corrupt:
+            os.system('rm ' + c)
     
