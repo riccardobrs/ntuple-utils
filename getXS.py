@@ -28,7 +28,7 @@ if __name__ == '__main__':
                     continue
             else:
                 print('[INFO] working on ' + tar)
-                os.system('tar --extract --file={0} {1}'.format(tar, cfgpath)
+                os.system('tar --extract --file={0} {1}'.format(tar, cfgpath))
                 print('       read_03_input.cfg extracted')
         with open(cfgpath, 'r') as cp:
             cfg = configparser.ConfigParser()
