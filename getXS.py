@@ -13,10 +13,12 @@ if __name__ == '__main__':
     
     tars = glob(os.path.abspath(args.base) + '/*.' + args.ext)
     for tar in tars:
+        print('[INFO] working on ' + tar)
         cfgpath = os.path.splitext(os.path.basename(tar))[0] + '/read_03_input.cfg'
         cfgdir = os.path.dirname(os.path.abspath(cfgpath))
         if '_results' not in cfgdir: continue
         os.system('tar --extract --file={0} {1}'.format(tar, cfgpath)
+        print('       cfg extracted')
         with open(cfgpath, 'r') as cp:
             cfg = configparser.ConfigParser()
             cfg.readfp(cp)
