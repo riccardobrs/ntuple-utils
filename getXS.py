@@ -8,7 +8,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line parser')
     parser.add_argument('-b', dest='base', help='Results archives base folder', required=True)
     parser.add_argument('-o', dest='outfile', help='Output path', required=True)
-    parser.add_argument('--ext', dest='ext', help='Archives extension', required=False, default='tar.gz'
+    parser.add_argument('--ext', dest='ext', help='Archives extension', required=False, default='tar.gz')
     args = parser.parse_args()
     
     tars = glob(os.path.abspath(args.base) + '/*.' + args.ext)
@@ -17,16 +17,19 @@ if __name__ == '__main__':
         cfgpath = os.path.splitext(os.path.basename(tar))[0] + '/read_03_input.cfg'
         cfgdir = os.path.dirname(os.path.abspath(cfgpath))
         if '_results' not in cfgdir:
-             print('[INFO] skipping ' + tar)
-             continue
+            print('[INFO] skipping ' + tar)
+            continue
         else:
-             if os.path.isdir(cfgdir):
-                 print('[INFO] ' + cfgdir + ' already extracted')
-                 continue
-             else:
-                 print('[INFO] working on ' + tar)
-        os.system('tar --extract --file={0} {1}'.format(tar, cfgpath)
-        print('       cfg extracted')
+            if os.path.isdir(cfgdir):
+                if os.path.isfile(cfgpath):
+                    print('[INFO] working on ' + cfgpath)
+                else:
+                    print('[INFO] skipping ' + tar)
+                    continue
+            else:
+                print('[INFO] working on ' + tar)
+                os.system('tar --extract --file={0} {1}'.format(tar, cfgpath)
+                print('       read_03_input.cfg extracted')
         with open(cfgpath, 'r') as cp:
             cfg = configparser.ConfigParser()
             cfg.readfp(cp)
