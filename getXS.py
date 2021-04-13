@@ -16,7 +16,15 @@ if __name__ == '__main__':
         print('[INFO] working on ' + tar)
         cfgpath = os.path.splitext(os.path.basename(tar))[0] + '/read_03_input.cfg'
         cfgdir = os.path.dirname(os.path.abspath(cfgpath))
-        if '_results' not in cfgdir: continue
+        if '_results' not in cfgdir:
+             print('[INFO] skipping ' + tar)
+             continue
+        else:
+             if os.path.isdir(cfgdir):
+                 print('[INFO] ' + cfgdir + ' already extracted')
+                 continue
+             else:
+                 print('[INFO] working on ' + tar)
         os.system('tar --extract --file={0} {1}'.format(tar, cfgpath)
         print('       cfg extracted')
         with open(cfgpath, 'r') as cp:
