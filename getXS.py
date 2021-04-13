@@ -13,7 +13,6 @@ if __name__ == '__main__':
     
     tars = glob(os.path.abspath(args.base) + '/*.' + args.ext)
     for tar in tars:
-        print('[INFO] working on ' + tar)
         cfgpath = os.path.splitext(os.path.basename(tar))[0] + '/read_03_input.cfg'
         cfgdir = os.path.dirname(os.path.abspath(cfgpath))
         if '_results' not in cfgdir:
