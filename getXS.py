@@ -39,9 +39,9 @@ if __name__ == '__main__':
             cfg.readfp(cp)
             sample_name = [str(c) for c in cfg.sections() if str(c).startswith('Z')][0]
             sample_XS = str(cfg.get(sample_name, 'XS')) # pb
-            
+
         with open(args.outfile, 'a') as o:
-            o.write(sample_name + '\t' + sample_XS + '\n')
+            o.write("samples['{0}'].extend( ['xsec={1}',      'kfact=1.00',           'ref=X'] )\n".format(sample_name,sample_XS))
 
         if rmdir:    
             os.system('rm -rf ' + cfgdir)
