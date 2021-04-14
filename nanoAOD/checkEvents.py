@@ -18,6 +18,7 @@ if __name__ == '__main__':
     b = os.path.abspath(args.base)
     files = glob(b + '/*/*.root')
     corrupt = list()
+    events = 0
 
     for f in files:
         rf = ROOT.TFile(f, 'READ')
@@ -27,6 +28,7 @@ if __name__ == '__main__':
             print('>>> Empty events tree for ' + f)
             corrupt.append(f)
         else:
+            events += n
             if args.verbose:
                 print('>>> Number of events for {0} = {1}'.format(f,n))
         rf.Close()
@@ -37,5 +39,12 @@ if __name__ == '__main__':
         for c in corrupt:
             os.system('rm ' + c)
     
-    print('\n>>> >> > checkEvents done < << <<<')
+    ratio = int(round(len(corrupt) / len(files)))
+    average = float(events) / (len(files) - len(corrupt))
     
+    print('\nSummary')
+    print('--------------------------------')
+    print('Scanned files: {0}'.format(len(files)))
+    print('Corrupt files: {0}'.format(len(corrupt)))
+    print('Corrupt files percentage: {0}%'.format(ratio)
+    print('Average events per file: {0}'.format(average) # corrupt files neglected
