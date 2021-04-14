@@ -11,6 +11,8 @@ if __name__ == '__main__':
                             required=True)
     parser.add_argument('--delete', dest='delete', help='Delete corrupt root files', 
                             default=False, action='store_true', required=False)
+    parser.add_argument('--verbose', dest='verbose', help='Verbose mode', 
+                            default=False, action='store_true', required=False)
     args = parser.parse_args()
 
     b = os.path.abspath(args.base)
@@ -25,11 +27,15 @@ if __name__ == '__main__':
             print('>>> Empty events tree for ' + f)
             corrupt.append(f)
         else:
-            print('>>> Number of events for {0} = {1}'.format(f,n))
+            if args.verbose:
+                print('>>> Number of events for {0} = {1}'.format(f,n))
         rf.Close()
 
     if args.delete:
-        print('>>> Removing empty root files')
+        if len(corrupt) > 0:
+            print('>>> Removing empty root files')
         for c in corrupt:
             os.system('rm ' + c)
+    
+    print('\n>>> >> > checkEvents done < << <<<')
     
