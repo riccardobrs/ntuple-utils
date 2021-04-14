@@ -39,7 +39,7 @@ if __name__ == '__main__':
         for c in corrupt:
             os.system('rm ' + c)
     
-    ratio = int(round(len(corrupt) / len(files)))
+    ratio = int(1000 * float(len(corrupt)) / len(files)) / 10.0
     average = float(events) / (len(files) - len(corrupt))
     
     print('\nSummary')
