@@ -46,5 +46,5 @@ if __name__ == '__main__':
     print('--------------------------------')
     print('Scanned files: {0}'.format(len(files)))
     print('Corrupt files: {0}'.format(len(corrupt)))
-    print('Corrupt files percentage: {0}%'.format(ratio)
-    print('Average events per file: {0}'.format(average) # corrupt files neglected
+    print('Corrupt files percentage: {0}%'.format(ratio))
+    print('Average events per file: {0}'.format(average)) # corrupt files neglected
