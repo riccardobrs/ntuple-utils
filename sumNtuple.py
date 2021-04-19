@@ -47,6 +47,8 @@ if __name__ == '__main__':
                             default=False, action='store_true', required=False)
     parser.add_argument('--multi', dest='multi', help='Multi operator mode: op1_op2. Default is 1D', 
                             default=False, action='store_true', required=False)
+    parser.add_argument('--sm', dest='sm', help='Work also SM component', 
+                            default=False, action='store_true', required=False)
     args = parser.parse_args()
 
     cfg = configparser.ConfigParser()
@@ -79,14 +81,22 @@ if __name__ == '__main__':
                 operators.append('{0}_{1}'.format(ops1d[x].strip(),ops1d[y].strip()))
     else:
         operators = ops1d
+    
+    operators = ['SM'] + operators
 
     for operator in operators:
 
-        files = [f for f in glob.glob(ntupleDir + '/ntuple*' + ntupleSuffix + '.root') if (operator.strip()+'_') in f]
-        if args.multi:
-            files = [f for f in files if 'IN' in f]
+        if operator == 'SM':
+            if args.sm:
+                files = glob.glob(ntupleDir + '/ntuple*_SM.root')
+            else:
+                continue
         else:
-            files = [f for f in files if 'IN' not in f]
+            files = [f for f in glob.glob(ntupleDir + '/ntuple*' + ntupleSuffix + '.root') if (operator.strip()+'_') in f]
+            if args.multi:
+                files = [f for f in files if 'IN' in f]
+            else:
+                files = [f for f in files if 'IN' not in f]
         
         toBeSkipped = 0
         for state in statesIn:
