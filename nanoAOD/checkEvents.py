@@ -23,18 +23,22 @@ if __name__ == '__main__':
     for f in files:
         rf = ROOT.TFile(f, 'READ')
         t = rf.Get('Events')
-        if t.IsA().GetName() == 'TTree':
-            n = t.GetEntries()
-            if n == 0:
-                print('>>> Empty events tree in ' + f)
-                corrupt.append(f)
-            else:
-                events += n
-                if args.verbose:
-                    print('>>> Number of events for {0} = {1}'.format(f,n))
-        else:
+        if t == None:
             print('>>> Events tree not found in ' + f)
             corrupt.append(f)
+        else:
+            if t.IsA().GetName() == 'TTree':
+                n = t.GetEntries()
+                if n == 0:
+                    print('>>> Empty events tree in ' + f)
+                    corrupt.append(f)
+                else:
+                    events += n
+                    if args.verbose:
+                        print('>>> Number of events for {0} = {1}'.format(f,n))
+            else:
+                print('>>> Events tree not found in ' + f)
+                corrupt.append(f)
         rf.Close()
 
     if args.delete:
