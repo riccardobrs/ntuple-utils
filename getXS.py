@@ -115,6 +115,4 @@ if __name__ == '__main__':
             with open(args.outfile, 'a') as o:
                 o.write(to_write)
             f.Close()
-
-
-    
+            
