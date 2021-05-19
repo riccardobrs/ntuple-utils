@@ -112,10 +112,9 @@ if __name__ == '__main__':
             h = f.Get(sample + '_nums')
             xs = h.GetBinContent(1)
             to_write = sample_str.format(sample,xs)
-            f.Close()
-
             with open(args.outfile, 'a') as o:
                 o.write(to_write)
+            f.Close()
 
 
     
