@@ -83,7 +83,7 @@ if __name__ == '__main__':
         #sm_h.SetTitle('SM')
         sm_h.SetTitle('Official')
         #bsm_h.SetTitle('Reweighted')
-        sm_h.SetTitle('Private')
+        bsm_h.SetTitle('Private')
         pad1.BuildLegend()
         sm_h.SetTitle('Jet^{'+n+'} p_{T} (GeV)')
 
