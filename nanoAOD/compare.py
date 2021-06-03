@@ -7,7 +7,8 @@ import argparse
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Command line parser')
-    parser.add_argument('-b', dest='base', help='Base folder that contains root files', required=True)
+    parser.add_argument('--basesm', dest='basesm', help='Base folder that contains root files', required=True)
+    parser.add_argument('--basebsm', dest='basebsm', help='Base folder that contains root files', required=True)
     parser.add_argument('-o', dest='out', help='Output folder', required=True)
     parser.add_argument('--sm', dest='sm', help='SM name convention', default='ZZ_SM', required=False)
     parser.add_argument('--bsm', dest='bsm', help='BSM name convention', default='ZZ_cqq31_SM_LI_QU', required=False)
@@ -19,8 +20,8 @@ if __name__ == '__main__':
 
     ROOT.gStyle.SetOptStat(0)
 
-    sm_files = glob('{0}/*{1}*.root'.format(args.base, args.sm))
-    bsm_files = glob('{0}/*{1}*.root'.format(args.base, args.bsm))
+    sm_files = glob('{0}/*{1}*.root'.format(args.basesm, args.sm))
+    bsm_files = glob('{0}/*{1}*.root'.format(args.basebsm, args.bsm))
 
     sm_chain = ROOT.TChain('Events')
     bsm_chain = ROOT.TChain('Events')
@@ -77,15 +78,19 @@ if __name__ == '__main__':
         
         pad1.cd()
         sm_chain.Draw('{0}>>jet-pt-{1}'.format(var[0], n), 'XSWeight', 'HIST')
-        bsm_chain.Draw('{0}>>reweighted-{1}'.format(var[0], n), 'XSWeight*LHEReweightingWeight[0]', 'SAME')
-        sm_h.SetTitle('SM')
-        bsm_h.SetTitle('Reweighted')
+        #bsm_chain.Draw('{0}>>reweighted-{1}'.format(var[0], n), 'XSWeight*LHEReweightingWeight[0]', 'SAME')
+        bsm_chain.Draw('{0}>>reweighted-{1}'.format(var[0], n), 'XSWeight', 'SAME')
+        #sm_h.SetTitle('SM')
+        sm_h.SetTitle('Official')
+        #bsm_h.SetTitle('Reweighted')
+        sm_h.SetTitle('Private')
         pad1.BuildLegend()
         sm_h.SetTitle('Jet^{'+n+'} p_{T} (GeV)')
 
         pad2.cd()
         h_ratio_vs = bsm_h.Clone('ratio_vs')
-        h_ratio_vs.GetYaxis().SetTitle('Reweighted/SM')
+        #h_ratio_vs.GetYaxis().SetTitle('Reweighted/SM')
+        h_ratio_vs.GetYaxis().SetTitle('Private/Official')
         h_ratio_vs.SetStats(0)
         h_ratio_vs.Divide (sm_h)
         h_ratio_vs.SetTitle('')
@@ -96,7 +101,8 @@ if __name__ == '__main__':
         h_ratio_vs.GetYaxis().SetTitleOffset (0.4)
 
         h_ratio_same = sm_h.Clone('ratio_same')
-        h_ratio_same.GetYaxis().SetTitle('Reweighted/SM')
+        #h_ratio_same.GetYaxis().SetTitle('Reweighted/SM')
+        h_ratio_same.GetYaxis().SetTitle('Private/Official')
         h_ratio_same.SetStats(0)
         h_ratio_same.Divide (sm_h)
         h_ratio_same.SetTitle ('')
@@ -125,6 +131,8 @@ if __name__ == '__main__':
         sm_e = sm_e.value
         bsm_e = bsm_e.value
 
-        print('Integral (SM): {0} +- {1}'.format(sm_i, sm_e))
-        print('Integral (reweighted): {0} +- {1}'.format(bsm_i, bsm_e))
+        #print('Integral (SM): {0} +- {1}'.format(sm_i, sm_e))
+        #print('Integral (reweighted): {0} +- {1}'.format(bsm_i, bsm_e))
+        print('Integral (Official): {0} +- {1}'.format(sm_i, sm_e))
+        print('Integral (Private): {0} +- {1}'.format(bsm_i, bsm_e))
         print('Sigma: {0}'.format(abs(bsm_i-sm_i)/sqrt(sm_e**2 + bsm_e**2)))
