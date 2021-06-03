@@ -75,11 +75,13 @@ if __name__ == '__main__':
         
         canva.Modified()
         canva.Update()
+
+        mcCommonWeight = 'XSWeight*SFweight*PromptGenLepMatch2l*METFilter_MC'
         
         pad1.cd()
-        sm_chain.Draw('{0}>>jet-pt-{1}'.format(var[0], n), 'XSWeight', 'HIST')
+        sm_chain.Draw('{0}>>jet-pt-{1}'.format(var[0], n), mcCommonWeight, 'HIST')
         #bsm_chain.Draw('{0}>>reweighted-{1}'.format(var[0], n), 'XSWeight*LHEReweightingWeight[0]', 'SAME')
-        bsm_chain.Draw('{0}>>reweighted-{1}'.format(var[0], n), 'XSWeight', 'SAME')
+        bsm_chain.Draw('{0}>>reweighted-{1}'.format(var[0], n), mcCommonWeight, 'SAME')
         #sm_h.SetTitle('SM')
         sm_h.SetTitle('Official')
         #bsm_h.SetTitle('Reweighted')
