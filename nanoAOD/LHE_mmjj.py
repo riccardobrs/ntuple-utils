@@ -8,7 +8,12 @@ def get_mmjj(chain):
 
     mmjj_list = list()
 
-    for event in chain:
+    s = chain.GetEntries() / 100
+
+    for n,event in enumerate(chain):
+
+        if (n%s == 0) and (n/s <= 100): print('>>> reading events: {0}%'.format(n/s))
+
         # incoming particles have status -1, outgoing particles status 1
         out_indices = [i for i,status in enumerate(list(event.LHEPart_status)) if status==1] # outgoing
         out_partons_indices = [i for i in out_indices if abs(event.LHEPart_pdgId[i])>=1 and abs(event.LHEPart_pdgId[i])<=6] # partons
