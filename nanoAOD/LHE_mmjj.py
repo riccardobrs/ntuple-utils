@@ -84,8 +84,6 @@ if __name__ == '__main__':
     official_files = list()
     private_files = list()
 
-    lumi = args.lumi*1000. # 1/fb to 1/pb conversion
-
     for p in args.prefixoff.split(','):
         official_files = official_files + glob(args.official + '/nanoLatino*{0}*.root'.format(p.strip()))
 
@@ -119,11 +117,11 @@ if __name__ == '__main__':
     mmjj_histo_private = ROOT.TH1D('mmjj_private', '', 20, 0., xmax)
     
     for x in events_official:
-        wgt = x[1]*xsec_official*lumi/sum_wgt_official
+        wgt = x[1]*xsec_official*args.lumi/sum_wgt_official
         mmjj_histo_official.Fill(x[0], wgt)
 
     for x in events_private:
-        wgt = x[1]*xsec_private*lumi/sum_wgt_private
+        wgt = x[1]*xsec_private*args.lumi*1000./sum_wgt_private # 1/fb to 1/pb conversion
         mmjj_histo_private.Fill(x[0], wgt)
     
     draw_opt = ''
@@ -138,7 +136,7 @@ if __name__ == '__main__':
     mmjj_histo_official.SetLineColor(ROOT.kBlue)
     mmjj_histo_official.SetLineWidth(args.LWidth)
     mmjj_histo_official.Draw(draw_opt)
-    mmjj_histo_private.GetXaxis().SetTitle('min m_{jj} [GeV])
+    mmjj_histo_private.GetXaxis().SetTitle('min m_{jj} [GeV]')
     mmjj_histo_private.GetYaxis().SetTitle('Events')
     mmjj_histo_private.SetLineColor(ROOT.kRed)
     mmjj_histo_private.SetLineWidth(args.LWidth)
