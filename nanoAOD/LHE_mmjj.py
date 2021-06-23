@@ -109,6 +109,8 @@ if __name__ == '__main__':
 
     xsec_official = results_official['xsec']
     xsec_private = results_private['xsec']
+    print('Official xsec = {0}'.format(xsec_official))
+    print('Private xsec = {0}'.format(xsec_private))
 
     xmax = max([x[0] for x in (events_official + events_private)])
 
@@ -131,12 +133,12 @@ if __name__ == '__main__':
             draw_opt += ' E'
 
     mmjj_canva.cd()
-    mmjj_histo_official.GetXaxis().SetTitle('min m_{jj}')
+    mmjj_histo_official.GetXaxis().SetTitle('min m_{jj} [GeV]')
     mmjj_histo_official.GetYaxis().SetTitle('Events')
     mmjj_histo_official.SetLineColor(ROOT.kBlue)
     mmjj_histo_official.SetLineWidth(args.LWidth)
     mmjj_histo_official.Draw(draw_opt)
-    mmjj_histo_private.GetXaxis().SetTitle('min m_{jj}')
+    mmjj_histo_private.GetXaxis().SetTitle('min m_{jj} [GeV])
     mmjj_histo_private.GetYaxis().SetTitle('Events')
     mmjj_histo_private.SetLineColor(ROOT.kRed)
     mmjj_histo_private.SetLineWidth(args.LWidth)
