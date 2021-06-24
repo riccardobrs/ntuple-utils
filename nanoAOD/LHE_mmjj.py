@@ -52,6 +52,9 @@ def get_mmjj(chain, nmax):
     ele = 0
     mu = 0
     tau = 0
+    ele_weighted = 0.
+    mu_weighted = 0.
+    tau_weighted = 0.
 
     if nmax is None:
         nmax = chain.GetEntries()
@@ -81,15 +84,22 @@ def get_mmjj(chain, nmax):
 
         if len(out_partons_indices) != 4:
             print('[WARNING] found {0} partons in event number {1}'.format(len(out_partons_indices),n))
-        if len(out_ele_indices)==2: ele+=1
-        if len(out_mu_indices)==2: mu+=1
-        if len(out_tau_indices)==2: tau+=1
 
         mjj_detajj_list = mjjCombinations(event, out_partons_indices)
         
         xsec = event.Xsec # pb
         xwgtup = event.LHEWeight_originalXWGTUP # LHE nominal weight
         sum_wgt += xwgtup
+
+        if len(out_ele_indices)==2:
+            ele += 1
+            ele_weighted += xwgtup
+        if len(out_mu_indices)==2:
+            mu += 1
+            mu_weighted += xwgtup
+        if len(out_tau_indices)==2:
+            tau += 1
+            tau_weighted += xwgtup
 
         mmjj = min(mjj_detajj_list)[0] # minimum dijet invariant mass
         mmjj_toV = min(mjj_detajj_list, key=lambda x: abs(x[0]-mV))[0] # dijet invariant mass closest to V
@@ -114,9 +124,9 @@ def get_mmjj(chain, nmax):
     result['events_min_qqbar'] = mmjjqqbar_wgt_list
     result['events_max'] = mjjmax_wgt_list
     result['sum_wgt'] = sum_wgt
-    result['ele'] = ele
-    result['mu'] = mu
-    result['tau'] = tau
+    result['ele'] = (ele, ele_weighted)
+    result['mu'] = (mu, mu_weighted)
+    result['tau'] = (tau, tau_weighted)
         
     return result
 
@@ -201,13 +211,19 @@ if __name__ == '__main__':
     results_private = get_mmjj(private_chain, args.N)
 
     print('\n### Official production ###')
-    print(' N events with e+ e-: {0}'.format(results_official['ele']))
-    print(' N events with mu+ mu-: {0}'.format(results_official['mu']))
-    print(' N events with tau+ tau-: {0}'.format(results_official['tau']))
+    print(' N events (unweighted) with e+ e-: {0}'.format(results_official['ele'][0]))
+    print(' N events (unweighted) with mu+ mu-: {0}'.format(results_official['mu'][0]))
+    print(' N events (unweighted) with tau+ tau-: {0}'.format(results_official['tau'][0]))
+    print(' Yield events with e+ e-: {0}'.format(results_official['ele'][1]))
+    print(' Yield events with mu+ mu-: {0}'.format(results_official['mu'][1]))
+    print(' Yield events with tau+ tau-: {0}'.format(results_official['tau'][1]))
     print('\n### Private production ###')
-    print(' N events with e+ e-: {0}'.format(results_private['ele']))
-    print(' N events with mu+ mu-: {0}'.format(results_private['mu']))
-    print(' N events with tau+ tau-: {0}'.format(results_private['tau']))
+    print(' N events (unweighted) with e+ e-: {0}'.format(results_private['ele'][0]))
+    print(' N events (unweighted) with mu+ mu-: {0}'.format(results_private['mu'][0]))
+    print(' N events (unweighted) with tau+ tau-: {0}'.format(results_private['tau'][0]))
+    print(' Yield events with e+ e-: {0}'.format(results_private['ele'][1]))
+    print(' Yield events with mu+ mu-: {0}'.format(results_private['mu'][1]))
+    print(' Yield events with tau+ tau-: {0}'.format(results_private['tau'][1]))
 
     events_min_official = results_official['events_min']
     events_min_private = results_private['events_min']
